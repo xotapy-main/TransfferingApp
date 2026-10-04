@@ -3,6 +3,7 @@ package org.example.transfferingapp.user;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
 import org.example.transfferingapp.user.UserInterface.UserInterface;
 import org.jspecify.annotations.NonNull;
 
@@ -20,7 +21,7 @@ public class Account implements UserInterface {
     private String name;
     @NonNull
     private String userName;
-    @NonNull
+    @Email
     private String email;
     @NonNull
     private BigDecimal balance = BigDecimal.ZERO;
