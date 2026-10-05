@@ -1,104 +1,68 @@
 package org.example.transfferingapp.user;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import org.example.transfferingapp.user.UserInterface.UserInterface;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
 import org.jspecify.annotations.NonNull;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
+
 @Entity
-@Table(name = "User Account")
+@Table(name = "accounts")
 public class Account implements UserInterface {
     @Id
-    @NonNull
-    private final String id = generateId();
-    @NonNull
-    private String name;
-    @NonNull
-    private String userName;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
+    @Setter
+    @Getter
     @Email
     private String email;
+    @Setter
+    @Getter
+    @Column(nullable = false, unique = false)
+    private String name;
+    @Column(unique = true, nullable = false)
+    private String accountName;
     @NonNull
     private BigDecimal balance = BigDecimal.ZERO;
+    @Setter
+    @Getter
+    @NonNull
     private BigDecimal withdrawAmount = BigDecimal.ZERO;
+    @Setter
+    @Getter
+    @NonNull
     private BigDecimal depositAmount = BigDecimal.ZERO;
 
+    public Account() {}
 
-    private String sha256(String input) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
-            return bytesToHex(digest);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+    @Override
+    public BigDecimal withdraw(@NotNull @Positive BigDecimal amount) {
+        if (balance.compareTo(amount) < 0) {
+            throw new IllegalArgumentException(amount.toString());
         }
-    }
-
-    private String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
-    }
-    //Функция генерации UUID с префиксом
-    private String generateId() {
-        String hash = sha256(name + "UnitTest").substring(0, 12);
-        return userName + "_" + hash;
-    }
-    private String generateUserName() {
-        return sha256(name + "UnitTest").substring(0, 12);
-    }
-
-    public @NonNull String getId() {
-        return id;
-    }
-
-    public @NonNull String getName() {
-        return name;
-    }
-
-    public @NonNull BigDecimal getBalance() {
-        return balance;
+        this.balance = this.balance.subtract(amount);
+        this.withdrawAmount = this.withdrawAmount.add(BigDecimal.ONE);
+        return this.balance;
     }
 
     @Override
-    public BigDecimal deposit(BigDecimal amount) {
-        return balance.add(amount);
+    public BigDecimal deposit(@NotNull @Positive BigDecimal amount) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Deposit amount must be strictly positive");
+        }
+        this.balance = this.balance.add(amount);
+        this.depositAmount = this.depositAmount.add(amount);
+        return this.balance;
     }
-
-    @Override
-    public BigDecimal withdraw(BigDecimal amount) {
-        return null;
-    }
-
-    public BigDecimal getDepositCount() {
-        return depositAmount;
-    }
-
-    public BigDecimal getWithdrawCount() {
-        return withdrawAmount;
-    }
-
-    public void setName(@NonNull String name) {
-        this.name = name;
-    }
-
-    public void setBalance(@NonNull BigDecimal balance) {
-        this.balance = balance;
-    }
-
-    public void setWithdrawCount(BigDecimal withdrawAmount) {
-        this.withdrawAmount = withdrawAmount;
-    }
-
-    public void setDepositCount(BigDecimal depositAmount) {
-        this.depositAmount = depositAmount;
-    }
-
 }
